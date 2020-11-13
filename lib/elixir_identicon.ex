@@ -4,6 +4,47 @@ defmodule ElixirIdenticon do
   |> hashInput
   |> pickColor
   |> buildGrid
+  |> filterOdd
+  |> buildPixelMap
+  |> drawImage
+  |> saveImage(input)
+  end
+
+  def saveImage(image, input) do
+    File.write("#{input}.png", image)
+  end
+
+  def drawImage(%ElixirIdenticon.Image{ color:  color , pixel_map: pixelMap }) do
+    image = :egd.create(250, 250)
+    fill = :egd.color(color)
+
+    Enum.each pixelMap, fn({start, stop}) ->
+      :egd.filledRectangle(image, start, stop, fill)
+    end
+
+    :egd.render(image)
+  end
+
+  def buildPixelMap(%ElixirIdenticon.Image{ grid:  grid } = image) do
+    pixelMap = Enum.map grid, fn ({ _value , index }) ->
+      horizontal = rem(index, 5) * 50
+      vertical = div(index, 5) * 50
+
+      topLeft = { horizontal, vertical }
+      bottomRight = { horizontal+50, vertical+50}
+
+      { topLeft, bottomRight }
+    end
+
+    %ElixirIdenticon.Image{ image | pixel_map: pixelMap }
+  end
+
+  def filterOdd(%ElixirIdenticon.Image{ grid:  grid } = image) do
+    filteredGrid = Enum.filter grid, fn ({ value , _index }) ->
+      rem(value, 2) == 0
+    end
+
+    %ElixirIdenticon.Image{ image | grid: filteredGrid }
   end
 
   def mirrorRow(row) do
